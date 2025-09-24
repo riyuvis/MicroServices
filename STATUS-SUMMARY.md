@@ -44,8 +44,8 @@
 ### **Step 1: Verify AWS CLI**
 ```bash
 aws --version
-aws configure set aws_access_key_id AKIA2UZBV7QXNP2PQ2ZI
-aws configure set aws_secret_access_key gbxeU+WD3JiX9FQhMSijAXzIu8a+SUnLrAr2cPfv
+aws configure set aws_access_key_id YOUR_AWS_ACCESS_KEY_ID
+aws configure set aws_secret_access_key YOUR_AWS_SECRET_ACCESS_KEY
 aws configure set default.region us-east-1
 aws sts get-caller-identity
 ```
@@ -170,3 +170,4 @@ AIOps/
 ## 🎉 **Your AI-Powered DevSecOps Flow is Complete and Ready!**
 
 **Next Step**: Restart your terminal and run the verification commands to begin deployment of your enterprise-grade security analysis system with AWS Bedrock and Claude 3.5 Sonnet.
+

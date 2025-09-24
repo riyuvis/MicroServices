@@ -45,8 +45,8 @@ After restarting your terminal, run these commands to verify AWS CLI is working:
 aws --version
 
 # 2. Configure AWS credentials
-aws configure set aws_access_key_id AKIA2UZBV7QXNP2PQ2ZI
-aws configure set aws_secret_access_key gbxeU+WD3JiX9FQhMSijAXzIu8a+SUnLrAr2cPfv
+aws configure set aws_access_key_id YOUR_AWS_ACCESS_KEY_ID
+aws configure set aws_secret_access_key YOUR_AWS_SECRET_ACCESS_KEY
 aws configure set default.region us-east-1
 
 # 3. Test AWS connection
@@ -136,8 +136,8 @@ aws bedrockagent-runtime invoke-agent --agent-id YOUR_AGENT_ID --session-id test
 ### **Environment Variables:**
 ```bash
 # Set AWS credentials as environment variables
-set AWS_ACCESS_KEY_ID=AKIA2UZBV7QXNP2PQ2ZI
-set AWS_SECRET_ACCESS_KEY=gbxeU+WD3JiX9FQhMSijAXzIu8a+SUnLrAr2cPfv
+set AWS_ACCESS_KEY_ID=YOUR_AWS_ACCESS_KEY_ID
+set AWS_SECRET_ACCESS_KEY=YOUR_AWS_SECRET_ACCESS_KEY
 set AWS_DEFAULT_REGION=us-east-1
 ```
 
@@ -160,3 +160,4 @@ If you continue to have issues:
 ---
 
 **🚀 Once AWS CLI is working, you'll be ready to deploy your AI-powered DevSecOps flow!**
+

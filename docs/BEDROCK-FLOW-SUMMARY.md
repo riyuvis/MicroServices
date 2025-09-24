@@ -94,8 +94,8 @@ Step 6: Alert Notification
 ### **Option 1: Quick Setup (Recommended)**
 ```bash
 # Set AWS credentials
-$env:AWS_ACCESS_KEY_ID='AKIA2UZBV7QXNP2PQ2ZI'
-$env:AWS_SECRET_ACCESS_KEY='gbxeU+WD3JiX9FQhMSijAXzIu8a+SUnLrAr2cPfv'
+$env:AWS_ACCESS_KEY_ID='YOUR_AWS_ACCESS_KEY_ID'
+$env:AWS_SECRET_ACCESS_KEY='YOUR_AWS_SECRET_ACCESS_KEY'
 $env:AWS_DEFAULT_REGION='us-east-1'
 
 # Run setup
@@ -233,3 +233,4 @@ node scripts/create-bedrock-flow.js test
 **🎯 Your AI-powered DevSecOps flow is ready to deploy!**
 
 This comprehensive setup provides enterprise-grade security analysis with AI-powered insights, automated compliance checking, and actionable remediation guidance. The flow integrates seamlessly with your existing CI/CD pipeline and provides real-time security monitoring for your microservices architecture.
+

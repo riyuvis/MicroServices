@@ -15,8 +15,8 @@ terraform --version
 ### Option A: Using PowerShell Script (Recommended)
 ```powershell
 # Set AWS credentials
-$env:AWS_ACCESS_KEY_ID='AKIA2UZBV7QXNP2PQ2ZI'
-$env:AWS_SECRET_ACCESS_KEY='gbxeU+WD3JiX9FQhMSijAXzIu8a+SUnLrAr2cPfv'
+$env:AWS_ACCESS_KEY_ID='YOUR_AWS_ACCESS_KEY_ID'
+$env:AWS_SECRET_ACCESS_KEY='YOUR_AWS_SECRET_ACCESS_KEY'
 $env:AWS_DEFAULT_REGION='us-east-1'
 
 # Deploy infrastructure
@@ -135,3 +135,4 @@ After successful deployment:
 - Check AWS CloudTrail for detailed error logs
 - Review Terraform plan output for resource conflicts
 - Verify AWS service availability in your region
+

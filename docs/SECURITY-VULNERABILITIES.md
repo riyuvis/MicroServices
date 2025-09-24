@@ -29,7 +29,7 @@ Your DevSecOps environment found **22 vulnerabilities** across your codebase usi
 **Fix:** 
 ```javascript
 // ❌ Bad
-const accessKey = 'AKIA2UZBV7QXNP2PQ2ZI';
+const accessKey = 'YOUR_AWS_ACCESS_KEY_ID';
 
 // ✅ Good
 const accessKey = process.env.AWS_ACCESS_KEY_ID;
@@ -203,3 +203,4 @@ After implementing fixes:
 ---
 
 **Remember**: Security is an ongoing process. Regular scans, updates, and reviews are essential for maintaining a secure DevSecOps environment.
+

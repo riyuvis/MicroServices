@@ -19,7 +19,7 @@ class SecurityFixer {
             try {
                 const content = await fs.readFile(file, 'utf8');
                 
-                if (content.includes('AKIA2UZBV7QXNP2PQ2ZI')) {
+                if (content.includes('YOUR_AWS_ACCESS_KEY_ID')) {
                     console.log(`  ⚠️  Found hardcoded credentials in ${file}`);
                     console.log(`  💡 Recommendation: Remove hardcoded credentials and use environment variables`);
                     
@@ -183,3 +183,4 @@ class SecurityFixer {
 // Run the security fix analysis
 const fixer = new SecurityFixer();
 fixer.run().catch(console.error);
+

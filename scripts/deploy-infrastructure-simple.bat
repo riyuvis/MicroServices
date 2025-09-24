@@ -24,8 +24,8 @@ if %errorlevel%==0 (
 
 echo.
 echo Setting up AWS credentials...
-set AWS_ACCESS_KEY_ID=AKIA2UZBV7QXNP2PQ2ZI
-set AWS_SECRET_ACCESS_KEY=gbxeU+WD3JiX9FQhMSijAXzIu8a+SUnLrAr2cPfv
+set AWS_ACCESS_KEY_ID=YOUR_AWS_ACCESS_KEY_ID
+set AWS_SECRET_ACCESS_KEY=YOUR_AWS_SECRET_ACCESS_KEY
 set AWS_DEFAULT_REGION=us-east-1
 echo ✓ AWS credentials configured
 
@@ -96,3 +96,4 @@ terraform output
 
 cd ..
 pause
+
