@@ -1,0 +1,377 @@
+{
+  "flowId": "fmac-devsecops-security-flow",
+  "flowName": "FMac DevSecOps Security Analysis Flow",
+  "description": "AI-powered security analysis flow using FMacDevSecOps knowledge base for comprehensive DevSecOps security assessment",
+  "version": "1.0.0",
+  "createdAt": "2024-01-22T17:00:00Z",
+  "updatedAt": "2024-01-22T17:00:00Z",
+  "status": "ACTIVE",
+  "executionRole": "arn:aws:iam::731825699886:role/FMacDevSecOpsBedrockRole",
+  "knowledgeBaseId": "FMacDevSecOps",
+  "workflowDefinition": {
+    "startAt": "initialize-security-scan",
+    "states": [
+      {
+        "name": "initialize-security-scan",
+        "type": "Task",
+        "resource": "arn:aws:bedrock:::model/claude-3-5-sonnet-20241022-v2:0",
+        "parameters": {
+          "prompt": "Initialize security analysis for the provided code repository. Connect to FMacDevSecOps knowledge base and prepare for comprehensive security assessment. Repository: ${repositoryUrl}",
+          "maxTokens": 1000,
+          "temperature": 0.1,
+          "knowledgeBaseId": "FMacDevSecOps"
+        },
+        "next": "load-security-documentation",
+        "retry": [
+          {
+            "errorEquals": ["Bedrock.ThrottlingException"],
+            "intervalSeconds": 2,
+            "maxAttempts": 3,
+            "backoffRate": 2.0
+          }
+        ]
+      },
+      {
+        "name": "load-security-documentation",
+        "type": "Task",
+        "resource": "arn:aws:bedrock:::model/claude-3-5-sonnet-20241022-v2:0",
+        "parameters": {
+          "prompt": "Load relevant security documentation from FMacDevSecOps knowledge base including OWASP guidelines, compliance frameworks, and remediation patterns. Focus on the most relevant security controls for the code being analyzed.",
+          "maxTokens": 1500,
+          "temperature": 0.1,
+          "knowledgeBaseId": "FMacDevSecOps"
+        },
+        "next": "perform-vulnerability-analysis",
+        "retry": [
+          {
+            "errorEquals": ["Bedrock.ThrottlingException"],
+            "intervalSeconds": 2,
+            "maxAttempts": 3,
+            "backoffRate": 2.0
+          }
+        ]
+      },
+      {
+        "name": "perform-vulnerability-analysis",
+        "type": "Task",
+        "resource": "arn:aws:bedrock:::model/claude-3-5-sonnet-20241022-v2:0",
+        "parameters": {
+          "prompt": "Perform comprehensive vulnerability analysis using FMacDevSecOps knowledge base. Analyze the code for:\n1. OWASP Top 10 vulnerabilities (injection, XSS, authentication flaws, etc.)\n2. Dependency vulnerabilities and known CVEs\n3. Hardcoded secrets and credentials\n4. Security misconfigurations\n5. Input validation issues\n6. Cryptographic weaknesses\n\nProvide detailed analysis with specific line numbers and code examples.",
+          "maxTokens": 4000,
+          "temperature": 0.1,
+          "knowledgeBaseId": "FMacDevSecOps"
+        },
+        "next": "assess-compliance",
+        "retry": [
+          {
+            "errorEquals": ["Bedrock.ThrottlingException"],
+            "intervalSeconds": 2,
+            "maxAttempts": 3,
+            "backoffRate": 2.0
+          }
+        ]
+      },
+      {
+        "name": "assess-compliance",
+        "type": "Task",
+        "resource": "arn:aws:bedrock:::model/claude-3-5-sonnet-20241022-v2:0",
+        "parameters": {
+          "prompt": "Assess compliance against security frameworks using FMacDevSecOps knowledge base:\n1. SOC 2 Type II - Security, availability, processing integrity\n2. PCI DSS - Payment card industry standards\n3. HIPAA - Healthcare information protection\n4. GDPR - European data protection\n\nFor each framework, identify specific violations and provide compliance status (COMPLIANT, PARTIAL, NON_COMPLIANT).",
+          "maxTokens": 3000,
+          "temperature": 0.1,
+          "knowledgeBaseId": "FMacDevSecOps"
+        },
+        "next": "calculate-risk-score",
+        "retry": [
+          {
+            "errorEquals": ["Bedrock.ThrottlingException"],
+            "intervalSeconds": 2,
+            "maxAttempts": 3,
+            "backoffRate": 2.0
+          }
+        ]
+      },
+      {
+        "name": "calculate-risk-score",
+        "type": "Task",
+        "resource": "arn:aws:bedrock:::model/claude-3-5-sonnet-20241022-v2:0",
+        "parameters": {
+          "prompt": "Calculate comprehensive risk score based on vulnerability analysis and compliance assessment. Use CVSS scoring methodology and FMacDevSecOps knowledge base for risk assessment:\n1. Assign CVSS scores to each vulnerability\n2. Calculate business impact\n3. Assess exploitability\n4. Determine overall risk score (0-100)\n5. Categorize as LOW, MEDIUM, HIGH, or CRITICAL risk",
+          "maxTokens": 2000,
+          "temperature": 0.1,
+          "knowledgeBaseId": "FMacDevSecOps"
+        },
+        "next": "generate-remediation-guidance",
+        "retry": [
+          {
+            "errorEquals": ["Bedrock.ThrottlingException"],
+            "intervalSeconds": 2,
+            "maxAttempts": 3,
+            "backoffRate": 2.0
+          }
+        ]
+      },
+      {
+        "name": "generate-remediation-guidance",
+        "type": "Task",
+        "resource": "arn:aws:bedrock:::model/claude-3-5-sonnet-20241022-v2:0",
+        "parameters": {
+          "prompt": "Generate specific remediation guidance using FMacDevSecOps knowledge base. For each vulnerability and compliance violation:\n1. Provide specific code fixes with examples\n2. Suggest configuration changes\n3. Recommend security best practices\n4. Prioritize actions (IMMEDIATE, HIGH, MEDIUM, LOW)\n5. Include implementation timelines\n6. Reference relevant security controls from FMacDevSecOps KB",
+          "maxTokens": 4000,
+          "temperature": 0.1,
+          "knowledgeBaseId": "FMacDevSecOps"
+        },
+        "next": "create-executive-summary",
+        "retry": [
+          {
+            "errorEquals": ["Bedrock.ThrottlingException"],
+            "intervalSeconds": 2,
+            "maxAttempts": 3,
+            "backoffRate": 2.0
+          }
+        ]
+      },
+      {
+        "name": "create-executive-summary",
+        "type": "Task",
+        "resource": "arn:aws:bedrock:::model/claude-3-5-sonnet-20241022-v2:0",
+        "parameters": {
+          "prompt": "Create executive summary and comprehensive security report using FMacDevSecOps knowledge base insights:\n1. Executive summary with key findings\n2. Risk overview and business impact\n3. Compliance status summary\n4. Top 5 critical issues requiring immediate attention\n5. Recommended action plan with timelines\n6. References to FMacDevSecOps knowledge base sources",
+          "maxTokens": 3000,
+          "temperature": 0.1,
+          "knowledgeBaseId": "FMacDevSecOps"
+        },
+        "next": "send-notifications",
+        "retry": [
+          {
+            "errorEquals": ["Bedrock.ThrottlingException"],
+            "intervalSeconds": 2,
+            "maxAttempts": 3,
+            "backoffRate": 2.0
+          }
+        ]
+      },
+      {
+        "name": "send-notifications",
+        "type": "Task",
+        "resource": "arn:aws:sns:us-east-1:731825699886:fmac-devsecops-security-alerts",
+        "parameters": {
+          "subject": "FMac DevSecOps Security Analysis Complete",
+          "message": "Security analysis completed using FMacDevSecOps knowledge base. Check the generated report for detailed findings and remediation steps. Risk Level: ${riskLevel}",
+          "topicArn": "arn:aws:sns:us-east-1:731825699886:fmac-devsecops-security-alerts"
+        },
+        "next": "success",
+        "retry": [
+          {
+            "errorEquals": ["SNS.InvalidParameter"],
+            "intervalSeconds": 1,
+            "maxAttempts": 2
+          }
+        ]
+      },
+      {
+        "name": "success",
+        "type": "Succeed",
+        "outputPath": "$"
+      },
+      {
+        "name": "failure",
+        "type": "Fail",
+        "cause": "FMac DevSecOps security analysis failed",
+        "error": "SecurityAnalysisError"
+      }
+    ]
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "repositoryUrl": {
+        "type": "string",
+        "description": "Git repository URL to analyze"
+      },
+      "branch": {
+        "type": "string",
+        "description": "Git branch to analyze",
+        "default": "main"
+      },
+      "scanType": {
+        "type": "string",
+        "enum": ["full", "incremental", "dependency-only"],
+        "description": "Type of security scan to perform",
+        "default": "full"
+      },
+      "complianceFrameworks": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["SOC2", "PCI-DSS", "HIPAA", "GDPR", "ISO27001"]
+        },
+        "description": "Compliance frameworks to check against",
+        "default": ["SOC2", "PCI-DSS", "HIPAA", "GDPR"]
+      },
+      "knowledgeBaseId": {
+        "type": "string",
+        "description": "Knowledge base ID to use for analysis",
+        "default": "FMacDevSecOps"
+      }
+    },
+    "required": ["repositoryUrl"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "scanId": {
+        "type": "string",
+        "description": "Unique identifier for this scan"
+      },
+      "timestamp": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Scan completion timestamp"
+      },
+      "knowledgeBase": {
+        "type": "string",
+        "description": "Knowledge base used for analysis",
+        "default": "FMacDevSecOps"
+      },
+      "vulnerabilities": {
+        "type": "object",
+        "properties": {
+          "critical": {
+            "type": "integer",
+            "description": "Number of critical vulnerabilities"
+          },
+          "high": {
+            "type": "integer",
+            "description": "Number of high severity vulnerabilities"
+          },
+          "medium": {
+            "type": "integer",
+            "description": "Number of medium severity vulnerabilities"
+          },
+          "low": {
+            "type": "integer",
+            "description": "Number of low severity vulnerabilities"
+          }
+        }
+      },
+      "compliance": {
+        "type": "object",
+        "properties": {
+          "SOC2": {
+            "type": "string",
+            "enum": ["COMPLIANT", "PARTIAL", "NON_COMPLIANT"],
+            "description": "SOC 2 compliance status"
+          },
+          "PCI_DSS": {
+            "type": "string",
+            "enum": ["COMPLIANT", "PARTIAL", "NON_COMPLIANT"],
+            "description": "PCI DSS compliance status"
+          },
+          "HIPAA": {
+            "type": "string",
+            "enum": ["COMPLIANT", "PARTIAL", "NON_COMPLIANT"],
+            "description": "HIPAA compliance status"
+          },
+          "GDPR": {
+            "type": "string",
+            "enum": ["COMPLIANT", "PARTIAL", "NON_COMPLIANT"],
+            "description": "GDPR compliance status"
+          }
+        }
+      },
+      "riskAssessment": {
+        "type": "object",
+        "properties": {
+          "overallScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Overall risk score"
+          },
+          "riskLevel": {
+            "type": "string",
+            "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+            "description": "Risk level classification"
+          },
+          "businessImpact": {
+            "type": "string",
+            "description": "Assessment of business impact"
+          },
+          "exploitability": {
+            "type": "string",
+            "description": "Assessment of exploitability"
+          }
+        }
+      },
+      "remediation": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "vulnerabilityId": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "fix": {
+              "type": "string"
+            },
+            "code": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "string",
+              "enum": ["IMMEDIATE", "HIGH", "MEDIUM", "LOW"]
+            },
+            "timeline": {
+              "type": "string"
+            },
+            "knowledgeBaseSource": {
+              "type": "string",
+              "default": "FMacDevSecOps"
+            }
+          }
+        }
+      },
+      "executiveSummary": {
+        "type": "object",
+        "properties": {
+          "keyFindings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "topRisks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recommendedActions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "complianceStatus": {
+            "type": "string"
+          }
+        }
+      },
+      "reportUrl": {
+        "type": "string",
+        "description": "URL to the generated security report"
+      }
+    }
+  },
+  "tags": {
+    "Environment": "production",
+    "Team": "DevSecOps",
+    "Application": "SecurityAnalysis",
+    "KnowledgeBase": "FMacDevSecOps",
+    "CostCenter": "Security"
+  }
+}

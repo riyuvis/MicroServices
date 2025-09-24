@@ -1,0 +1,277 @@
+name: 🛡️ Bedrock AI Security Analysis Pipeline
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily security scan at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  AWS_REGION: us-east-1
+  BEDROCK_AGENT_ID: ${{ secrets.BEDROCK_AGENT_ID }}
+  BEDROCK_AGENT_ALIAS_ID: ${{ secrets.BEDROCK_AGENT_ALIAS_ID }}
+
+jobs:
+  # 🔍 Security Analysis with Bedrock AI
+  bedrock-security-analysis:
+    name: 🤖 AI-Powered Security Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule' || github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for better analysis
+          
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: |
+          npm ci
+          cd security && npm ci
+          cd ../bedrock && npm ci
+          
+      - name: 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: 🛡️ Run Bedrock AI Security Analysis
+        id: bedrock-analysis
+        run: |
+          echo "🚀 Starting AI-powered security analysis..."
+          node scripts/bedrock-security-pipeline.js \
+            --repository="${{ github.repository }}" \
+            --branch="${{ github.ref_name }}" \
+            --commit="${{ github.sha }}" \
+            --pr-number="${{ github.event.number }}" \
+            --agent-id="${{ env.BEDROCK_AGENT_ID }}" \
+            --alias-id="${{ env.BEDROCK_AGENT_ALIAS_ID }}" \
+            --output="security-analysis-report.json"
+            
+      - name: 📊 Generate Security Report
+        run: |
+          echo "📋 Generating comprehensive security report..."
+          node scripts/generate-security-report.js \
+            --input="security-analysis-report.json" \
+            --output="SECURITY-REPORT.md" \
+            --format="markdown"
+            
+      - name: 📤 Upload Security Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-analysis-report-${{ github.run_number }}
+          path: |
+            security-analysis-report.json
+            SECURITY-REPORT.md
+          retention-days: 30
+          
+      - name: 💬 Comment on Pull Request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'SECURITY-REPORT.md';
+            
+            if (fs.existsSync(reportPath)) {
+              const report = fs.readFileSync(reportPath, 'utf8');
+              
+              // Truncate report if too long (GitHub comment limit)
+              const truncatedReport = report.length > 32000 
+                ? report.substring(0, 32000) + '\n\n... (Report truncated due to length)'
+                : report;
+                
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 🛡️ AI Security Analysis Report\n\n${truncatedReport}`
+              });
+            }
+            
+      - name: 🚨 Security Gate Check
+        id: security-gate
+        run: |
+          echo "🔍 Checking security gate criteria..."
+          node scripts/security-gate-check.js \
+            --report="security-analysis-report.json" \
+            --max-critical="0" \
+            --max-high="3" \
+            --max-medium="10"
+            
+      - name: ❌ Fail on Critical Issues
+        if: steps.security-gate.outputs.passed != 'true'
+        run: |
+          echo "❌ Security gate failed! Critical security issues found."
+          echo "Please review and fix security issues before merging."
+          exit 1
+
+  # 🔄 Traditional Security Scans
+  traditional-security-scans:
+    name: 🔍 Traditional Security Scans
+    runs-on: ubuntu-latest
+    needs: bedrock-security-analysis
+    if: always()
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: |
+          npm ci
+          cd security && npm ci
+          
+      - name: 🔍 Run npm Audit
+        run: |
+          echo "🔍 Running npm security audit..."
+          npm audit --audit-level=moderate --json > npm-audit-report.json || true
+          
+      - name: 🛡️ Run ESLint Security Rules
+        run: |
+          echo "🛡️ Running ESLint security analysis..."
+          npx eslint . --ext .js,.ts,.jsx,.tsx \
+            --config .eslintrc.security.js \
+            --format json \
+            --output-file eslint-security-report.json || true
+            
+      - name: 🔒 Run Snyk Security Scan
+        if: env.SNYK_TOKEN != ''
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          echo "🔒 Running Snyk security scan..."
+          npm install -g snyk
+          snyk test --json > snyk-report.json || true
+          
+      - name: 📊 Upload Security Scan Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: traditional-security-scans-${{ github.run_number }}
+          path: |
+            npm-audit-report.json
+            eslint-security-report.json
+            snyk-report.json
+          retention-days: 30
+
+  # 🚀 Deployment Pipeline
+  deploy:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [bedrock-security-analysis, traditional-security-scans]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    environment: production
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: 🏗️ Deploy Infrastructure
+        run: |
+          echo "🏗️ Deploying infrastructure with Terraform..."
+          cd infrastructure
+          terraform init
+          terraform plan -out=tfplan
+          terraform apply -auto-approve tfplan
+          
+      - name: 🐳 Build and Push Docker Images
+        run: |
+          echo "🐳 Building and pushing Docker images..."
+          docker build -t ${{ secrets.ECR_REGISTRY }}/api:${{ github.sha }} ./microservices/api
+          docker build -t ${{ secrets.ECR_REGISTRY }}/auth:${{ github.sha }} ./microservices/auth
+          
+          docker push ${{ secrets.ECR_REGISTRY }}/api:${{ github.sha }}
+          docker push ${{ secrets.ECR_REGISTRY }}/auth:${{ github.sha }}
+          
+      - name: ☸️ Deploy to Kubernetes
+        run: |
+          echo "☸️ Deploying to Kubernetes..."
+          kubectl apply -f k8s/namespaces/
+          kubectl apply -f k8s/configmaps/
+          kubectl apply -f k8s/secrets/
+          kubectl apply -f k8s/deployments/
+          kubectl apply -f k8s/services/
+          kubectl apply -f k8s/ingress/
+          
+      - name: 🔍 Verify Deployment
+        run: |
+          echo "🔍 Verifying deployment..."
+          kubectl get pods -n devsecops
+          kubectl get services -n devsecops
+          kubectl get ingress -n devsecops
+          
+      - name: 📊 Deploy Monitoring
+        run: |
+          echo "📊 Deploying monitoring stack..."
+          kubectl apply -f monitoring/k8s/
+          
+      - name: 🎉 Deployment Success Notification
+        run: |
+          echo "🎉 Deployment completed successfully!"
+          echo "🚀 Application is now live in production!"
+          echo "📊 Monitoring dashboards available at: https://grafana.your-domain.com"
+
+  # 📊 Security Dashboard Update
+  update-security-dashboard:
+    name: 📊 Update Security Dashboard
+    runs-on: ubuntu-latest
+    needs: [bedrock-security-analysis, traditional-security-scans]
+    if: always()
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 📊 Download Security Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: security-analysis-report-${{ github.run_number }}
+          path: ./reports
+          
+      - name: 📊 Download Traditional Scan Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: traditional-security-scans-${{ github.run_number }}
+          path: ./reports
+          
+      - name: 📈 Update Grafana Dashboard
+        run: |
+          echo "📈 Updating security dashboard..."
+          node scripts/update-security-dashboard.js \
+            --bedrock-report="./reports/security-analysis-report.json" \
+            --npm-report="./reports/npm-audit-report.json" \
+            --eslint-report="./reports/eslint-security-report.json" \
+            --snyk-report="./reports/snyk-report.json"
+            
+      - name: 📧 Send Security Summary
+        if: github.event_name == 'schedule'
+        run: |
+          echo "📧 Sending daily security summary..."
+          node scripts/send-security-summary.js \
+            --reports="./reports" \
+            --recipients="${{ secrets.SECURITY_TEAM_EMAIL }}"

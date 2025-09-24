@@ -1,0 +1,56 @@
+{
+  "name": "devsecops-aws-bedrock",
+  "version": "1.0.0",
+  "description": "DevSecOps AWS Flow with Bedrock for Microservices Deployment",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run build:all",
+    "build:all": "npm run build:services",
+    "build:services": "cd microservices && npm run build:all",
+    "test": "npm run test:security && npm run test:services",
+    "test:security": "cd security && npm test",
+    "test:services": "cd microservices && npm test",
+    "lint": "npm run lint:services && npm run lint:security",
+    "lint:services": "cd microservices && npm run lint",
+    "lint:security": "cd security && npm run lint",
+    "security:scan": "node scripts/security-scan.js",
+    "deploy:dev": "npm run build && kubectl apply -f k8s/",
+    "deploy:prod": "npm run build && npm run security:scan && kubectl apply -f k8s/",
+    "infrastructure:plan": "cd infrastructure && terraform plan",
+    "infrastructure:apply": "cd infrastructure && terraform apply",
+    "infrastructure:destroy": "cd infrastructure && terraform destroy"
+  },
+  "keywords": [
+    "devsecops",
+    "aws",
+    "bedrock",
+    "microservices",
+    "security",
+    "ci-cd",
+    "kubernetes"
+  ],
+  "author": "DevSecOps Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.0.0",
+    "@types/node": "^20.0.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-security": "^3.0.1",
+    "jest": "^29.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.400.0",
+    "@aws-sdk/client-cloudwatch": "^3.400.0",
+    "@aws-sdk/client-config-service": "^3.400.0",
+    "@aws-sdk/client-eks": "^3.400.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.0",
+    "helmet": "^7.0.0",
+    "winston": "^3.10.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

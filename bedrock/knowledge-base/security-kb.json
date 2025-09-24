@@ -1,0 +1,115 @@
+{
+  "knowledgeBaseId": "FMacDevSecOps",
+  "name": "FMacDevSecOps",
+  "description": "Comprehensive security knowledge base for DevSecOps analysis including OWASP guidelines, compliance frameworks, and remediation patterns",
+  "status": "ACTIVE",
+  "roleArn": "arn:aws:iam::123456789012:role/BedrockDevSecOpsKnowledgeBaseRole",
+  "storageConfiguration": {
+    "type": "OPENSEARCH_SERVERLESS",
+    "opensearchServerlessConfiguration": {
+      "collectionArn": "arn:aws:aoss:us-east-1:123456789012:collection/devsecops-security-collection",
+      "vectorIndexName": "devsecops-security-vector-index",
+      "fieldMapping": {
+        "vectorField": "bedrock-knowledge-base-default-vector",
+        "textField": "AMAZON_BEDROCK_TEXT_CHUNK",
+        "metadataField": "AMAZON_BEDROCK_METADATA"
+      }
+    }
+  },
+  "dataSourceConfigurations": [
+    {
+      "dataSourceId": "owasp-guidelines",
+      "dataSourceName": "OWASP Security Guidelines",
+      "description": "OWASP Top 10 and security testing guidelines",
+      "dataSourceConfiguration": {
+        "s3Configuration": {
+          "bucketArn": "arn:aws:s3:::fmacsource",
+          "inclusionPrefixes": ["security-docs/", "owasp/"],
+          "exclusionPrefixes": []
+        }
+      },
+      "vectorIngestionConfiguration": {
+        "chunkingConfiguration": {
+          "chunkingStrategy": "FIXED_SIZE",
+          "fixedSizeChunkingConfiguration": {
+            "maxTokens": 512,
+            "overlapPercentage": 20
+          }
+        }
+      }
+    },
+    {
+      "dataSourceId": "compliance-frameworks",
+      "dataSourceName": "Compliance Framework Documentation",
+      "description": "SOC 2, PCI DSS, HIPAA, GDPR compliance requirements",
+      "dataSourceConfiguration": {
+        "s3Configuration": {
+          "bucketArn": "arn:aws:s3:::fmacsource",
+          "inclusionPrefixes": ["security-docs/compliance/"],
+          "exclusionPrefixes": []
+        }
+      },
+      "vectorIngestionConfiguration": {
+        "chunkingConfiguration": {
+          "chunkingStrategy": "FIXED_SIZE",
+          "fixedSizeChunkingConfiguration": {
+            "maxTokens": 512,
+            "overlapPercentage": 20
+          }
+        }
+      }
+    },
+    {
+      "dataSourceId": "remediation-patterns",
+      "dataSourceName": "Security Remediation Patterns",
+      "description": "Code examples and patterns for fixing security vulnerabilities",
+      "dataSourceConfiguration": {
+        "s3Configuration": {
+          "bucketArn": "arn:aws:s3:::fmacsource",
+          "inclusionPrefixes": ["security-docs/remediation/"],
+          "exclusionPrefixes": []
+        }
+      },
+      "vectorIngestionConfiguration": {
+        "chunkingConfiguration": {
+          "chunkingStrategy": "FIXED_SIZE",
+          "fixedSizeChunkingConfiguration": {
+            "maxTokens": 512,
+            "overlapPercentage": 20
+          }
+        }
+      }
+    },
+    {
+      "dataSourceId": "vulnerability-database",
+      "dataSourceName": "Known Vulnerability Database",
+      "description": "CVE database and known security vulnerabilities",
+      "dataSourceConfiguration": {
+        "s3Configuration": {
+          "bucketArn": "arn:aws:s3:::fmacsource",
+          "inclusionPrefixes": ["security-docs/vulnerabilities/"],
+          "exclusionPrefixes": []
+        }
+      },
+      "vectorIngestionConfiguration": {
+        "chunkingConfiguration": {
+          "chunkingStrategy": "FIXED_SIZE",
+          "fixedSizeChunkingConfiguration": {
+            "maxTokens": 512,
+            "overlapPercentage": 20
+          }
+        }
+      }
+    }
+  ],
+  "embeddingModelConfiguration": {
+    "embeddingModelArn": "arn:aws:bedrock:::model/amazon.titan-embed-text-v1"
+  },
+  "createdAt": "2024-01-19T16:00:00Z",
+  "updatedAt": "2024-01-19T16:00:00Z",
+  "tags": {
+    "Environment": "production",
+    "Team": "DevSecOps",
+    "Application": "SecurityAnalysis"
+  }
+}

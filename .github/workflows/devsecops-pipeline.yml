@@ -1,0 +1,334 @@
+name: DevSecOps Pipeline with AWS Bedrock
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  AWS_REGION: us-east-1
+  EKS_CLUSTER_NAME: devsecops-dev-eks
+  NODE_VERSION: '18'
+
+jobs:
+  # Job 1: Code Quality and Security Scanning
+  security-scan:
+    name: Security Analysis with AWS Bedrock
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd security && npm ci
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Run AWS Bedrock Security Scan
+      run: |
+        mkdir -p security-reports
+        node scripts/security-scan.js
+      env:
+        AWS_BEDROCK_MODEL_ID: anthropic.claude-3-sonnet-20240229-v1:0
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: security-reports/
+        retention-days: 30
+
+    - name: Upload SARIF results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: security-reports/final-security-report.json
+
+  # Job 2: Infrastructure Validation
+  infrastructure-test:
+    name: Infrastructure Validation
+    runs-on: ubuntu-latest
+    needs: security-scan
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.5.0
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Terraform Format Check
+      run: |
+        cd infrastructure
+        terraform fmt -check -recursive
+
+    - name: Terraform Init
+      run: |
+        cd infrastructure
+        terraform init -backend=false
+
+    - name: Terraform Validate
+      run: |
+        cd infrastructure
+        terraform validate
+
+    - name: Terraform Plan
+      run: |
+        cd infrastructure
+        terraform plan -var-file="terraform.tfvars.example" -out=tfplan
+
+    - name: Upload Terraform Plan
+      uses: actions/upload-artifact@v4
+      with:
+        name: terraform-plan
+        path: infrastructure/tfplan
+
+  # Job 3: Build and Test Microservices
+  build-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: security-scan
+    
+    strategy:
+      matrix:
+        service: [api, auth, database, gateway]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Lint code
+      run: |
+        npm run lint:services
+        npm run lint:security
+
+    - name: Run tests
+      run: |
+        npm run test:services
+        npm run test:security
+
+    - name: Build microservice
+      run: |
+        cd microservices/${{ matrix.service }}
+        npm run build
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.service }}-build
+        path: microservices/${{ matrix.service }}/dist/
+
+  # Job 4: Container Build and Scan
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    needs: [build-test]
+    
+    strategy:
+      matrix:
+        service: [api, auth, database, gateway]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ matrix.service }}-build
+        path: microservices/${{ matrix.service }}/dist/
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build Docker image
+      run: |
+        cd microservices/${{ matrix.service }}
+        docker build -t ${{ matrix.service }}:${{ github.sha }} .
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ matrix.service }}:${{ github.sha }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Tag and push to ECR
+      if: github.ref == 'refs/heads/main'
+      run: |
+        aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ github.actor }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+        docker tag ${{ matrix.service }}:${{ github.sha }} ${{ github.actor }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ matrix.service }}:${{ github.sha }}
+        docker tag ${{ matrix.service }}:${{ github.sha }} ${{ github.actor }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ matrix.service }}:latest
+        docker push ${{ github.actor }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ matrix.service }}:${{ github.sha }}
+        docker push ${{ github.actor }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ matrix.service }}:latest
+
+  # Job 5: Deploy to Development
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: [container-scan, infrastructure-test]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: development
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+
+    - name: Deploy to EKS
+      run: |
+        kubectl apply -f k8s/namespaces/
+        kubectl apply -f k8s/secrets/
+        kubectl apply -f k8s/configmaps/
+        kubectl apply -f k8s/deployments/
+        kubectl apply -f k8s/services/
+        kubectl apply -f k8s/ingress/
+
+    - name: Wait for deployment
+      run: |
+        kubectl rollout status deployment/api -n microservices --timeout=300s
+        kubectl rollout status deployment/auth -n microservices --timeout=300s
+        kubectl rollout status deployment/database -n microservices --timeout=300s
+        kubectl rollout status deployment/gateway -n microservices --timeout=300s
+
+    - name: Run smoke tests
+      run: |
+        kubectl get pods -n microservices
+        kubectl get services -n microservices
+
+  # Job 6: Deploy to Production
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [container-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Deploy Infrastructure
+      run: |
+        cd infrastructure
+        terraform init
+        terraform apply -auto-approve
+
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name devsecops-prod-eks
+
+    - name: Deploy to EKS
+      run: |
+        kubectl apply -f k8s/namespaces/
+        kubectl apply -f k8s/secrets/
+        kubectl apply -f k8s/configmaps/
+        kubectl apply -f k8s/deployments/
+        kubectl apply -f k8s/services/
+        kubectl apply -f k8s/ingress/
+
+    - name: Run health checks
+      run: |
+        kubectl get pods -n microservices
+        kubectl get services -n microservices
+        # Add actual health check endpoints here
+
+  # Job 7: Security Monitoring
+  security-monitoring:
+    name: Security Monitoring
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Check AWS Security Hub findings
+      run: |
+        aws securityhub get-findings --max-items 10 --region ${{ env.AWS_REGION }}
+
+    - name: Check AWS Config compliance
+      run: |
+        aws config get-compliance-summary-by-config-rule --region ${{ env.AWS_REGION }}
+
+    - name: Send notifications
+      if: failure()
+      run: |
+        echo "Security monitoring detected issues. Check AWS Security Hub and Config."

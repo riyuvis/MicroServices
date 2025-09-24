@@ -1,0 +1,32 @@
+# Manual Bedrock Permissions Setup
+# Run these commands one by one to add Bedrock permissions to your AWS user
+
+# 1. Attach AmazonBedrockFullAccess
+aws iam attach-user-policy --user-name a-sanjeevc --policy-arn arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+
+# 2. Attach AmazonS3FullAccess
+aws iam attach-user-policy --user-name a-sanjeevc --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+# 3. Attach AmazonOpenSearchServerlessFullAccess
+aws iam attach-user-policy --user-name a-sanjeevc --policy-arn arn:aws:iam::aws:policy/AmazonOpenSearchServerlessFullAccess
+
+# 4. Attach AWSLambda_FullAccess
+aws iam attach-user-policy --user-name a-sanjeevc --policy-arn arn:aws:iam::aws:policy/AWSLambda_FullAccess
+
+# 5. Attach AmazonSNSFullAccess
+aws iam attach-user-policy --user-name a-sanjeevc --policy-arn arn:aws:iam::aws:policy/AmazonSNSFullAccess
+
+# 6. Attach IAMFullAccess
+aws iam attach-user-policy --user-name a-sanjeevc --policy-arn arn:aws:iam::aws:policy/IAMFullAccess
+
+# 7. Wait 30 seconds for policy propagation, then test
+aws bedrock list-foundation-models --region us-east-1
+
+# 8. Test Knowledge Base access
+aws bedrockagent list-knowledge-bases --region us-east-1
+
+# 9. Test Agent access
+aws bedrockagent list-agents --region us-east-1
+
+# 10. Verify attached policies
+aws iam list-attached-user-policies --user-name a-sanjeevc

@@ -1,0 +1,40 @@
+{
+  "name": "bedrock-devsecops-flows",
+  "version": "1.0.0",
+  "description": "AWS Bedrock flows and agents for DevSecOps security analysis",
+  "main": "scripts/create-bedrock-flow.js",
+  "scripts": {
+    "setup": "node scripts/create-bedrock-flow.js setup",
+    "test": "node scripts/create-bedrock-flow.js test",
+    "help": "node scripts/create-bedrock-flow.js help",
+    "install-deps": "npm install",
+    "create-flow": "node scripts/create-bedrock-flow.js setup"
+  },
+  "keywords": [
+    "aws",
+    "bedrock",
+    "devsecops",
+    "security",
+    "ai",
+    "claude",
+    "flow",
+    "agent"
+  ],
+  "author": "DevSecOps Team",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-bedrock": "^3.478.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.478.0",
+    "@aws-sdk/client-bedrock-agent": "^3.478.0",
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.478.0",
+    "@aws-sdk/client-opensearchserverless": "^3.478.0",
+    "@aws-sdk/client-s3": "^3.478.0",
+    "@aws-sdk/client-iam": "^3.478.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

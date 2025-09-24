@@ -1,0 +1,97 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: microservices-ingress
+  namespace: microservices
+  labels:
+    app.kubernetes.io/name: microservices-ingress
+    app.kubernetes.io/instance: devsecops
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/part-of: microservices
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/load-balancer-name: devsecops-alb
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:ACCOUNT:certificate/CERT-ID
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '3'
+    alb.ingress.kubernetes.io/security-groups: sg-xxxxxxxxx
+    alb.ingress.kubernetes.io/subnets: subnet-xxxxxxxxx,subnet-yyyyyyyyy
+    # Security annotations
+    alb.ingress.kubernetes.io/wafv2-acl-arn: arn:aws:wafv2:us-east-1:ACCOUNT:regional/webacl/devsecops-waf
+    alb.ingress.kubernetes.io/actions.ssl-redirect: |
+      {
+        "Type": "redirect",
+        "RedirectConfig": {
+          "Protocol": "HTTPS",
+          "Port": "443",
+          "StatusCode": "HTTP_301"
+        }
+      }
+spec:
+  rules:
+  - host: api.devsecops.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: api-service
+            port:
+              number: 80
+  - host: auth.devsecops.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 80
+  - host: devsecops.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gateway-service
+            port:
+              number: 80
+      - path: /health
+        pathType: Prefix
+        backend:
+          service:
+            name: gateway-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - api.devsecops.example.com
+    - auth.devsecops.example.com
+    - devsecops.example.com
+    secretName: devsecops-tls
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: devsecops-tls
+  namespace: microservices
+  labels:
+    app.kubernetes.io/name: devsecops-tls
+    app.kubernetes.io/instance: devsecops
+    app.kubernetes.io/component: secret
+type: kubernetes.io/tls
+data:
+  # Base64 encoded certificate and key - replace with actual values
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t...
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t...

@@ -1,0 +1,118 @@
+{
+  "agentId": "devsecops-security-agent",
+  "agentName": "DevSecOps Security Analysis Agent",
+  "description": "AI-powered security analysis agent for DevSecOps pipeline",
+  "version": "1.0.0",
+  "agentStatus": "ACTIVE",
+  "foundationModel": "anthropic.claude-3-5-sonnet-20241022-v2",
+  "instruction": "You are a specialized security analysis agent for DevSecOps pipelines. Your role is to:\n\n1. **Security Analysis**: Analyze code repositories for security vulnerabilities including:\n   - Injection vulnerabilities (SQL, NoSQL, LDAP, OS command)\n   - Cross-Site Scripting (XSS) vulnerabilities\n   - Authentication and session management flaws\n   - Authorization bypasses and privilege escalation\n   - Cryptographic weaknesses\n   - Input validation issues\n   - Security misconfigurations\n   - Sensitive data exposure\n   - Insecure deserialization\n   - Known vulnerable components\n\n2. **Compliance Assessment**: Evaluate code against compliance frameworks:\n   - SOC 2 Type II controls\n   - PCI DSS requirements\n   - HIPAA security rules\n   - GDPR data protection\n   - ISO 27001 standards\n\n3. **Risk Assessment**: Provide detailed risk analysis including:\n   - CVSS scoring for vulnerabilities\n   - Business impact assessment\n   - Exploitability analysis\n   - Remediation priority ranking\n\n4. **Remediation Guidance**: Generate actionable fixes:\n   - Specific code changes\n   - Configuration updates\n   - Security best practices\n   - Implementation timelines\n\nAlways provide clear, actionable recommendations with code examples and prioritize critical vulnerabilities that could lead to data breaches or system compromise.",
+  "actionGroups": [
+    {
+      "actionGroupName": "SecurityAnalysis",
+      "description": "Perform comprehensive security analysis",
+      "actionGroupExecutor": {
+        "lambda": "arn:aws:lambda:us-east-1:123456789012:function:devsecops-security-analysis"
+      },
+      "apiSchema": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "repositoryUrl": {
+              "type": "string",
+              "description": "Git repository URL to analyze"
+            },
+            "scanType": {
+              "type": "string",
+              "enum": ["full", "incremental", "dependency"],
+              "description": "Type of security scan"
+            }
+          },
+          "required": ["repositoryUrl"]
+        }
+      }
+    },
+    {
+      "actionGroupName": "ComplianceCheck",
+      "description": "Check compliance against security frameworks",
+      "actionGroupExecutor": {
+        "lambda": "arn:aws:lambda:us-east-1:123456789012:function:devsecops-compliance-check"
+      },
+      "apiSchema": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "framework": {
+              "type": "string",
+              "enum": ["SOC2", "PCI-DSS", "HIPAA", "GDPR", "ISO27001"],
+              "description": "Compliance framework to check"
+            },
+            "codeBase": {
+              "type": "string",
+              "description": "Code base to analyze for compliance"
+            }
+          },
+          "required": ["framework", "codeBase"]
+        }
+      }
+    },
+    {
+      "actionGroupName": "VulnerabilityDatabase",
+      "description": "Query vulnerability databases for known issues",
+      "actionGroupExecutor": {
+        "lambda": "arn:aws:lambda:us-east-1:123456789012:function:devsecops-vuln-db"
+      },
+      "apiSchema": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "packageName": {
+              "type": "string",
+              "description": "Package or component name to check"
+            },
+            "version": {
+              "type": "string",
+              "description": "Package version"
+            }
+          },
+          "required": ["packageName"]
+        }
+      }
+    }
+  ],
+  "knowledgeBase": {
+    "knowledgeBaseId": "FMacDevSecOps",
+    "description": "Security knowledge base with OWASP guidelines, compliance frameworks, and remediation patterns"
+  },
+  "promptOverrideConfiguration": {
+    "promptConfigurations": [
+      {
+        "promptType": "PRE_PROCESSING",
+        "promptCreationMode": "OVERRIDDEN",
+        "promptState": "ENABLED",
+        "basePromptTemplate": "You are analyzing code for security vulnerabilities. Focus on:\n1. OWASP Top 10 vulnerabilities\n2. Common security misconfigurations\n3. Authentication and authorization flaws\n4. Data protection and privacy issues\n5. Cryptographic weaknesses\n\nProvide specific, actionable recommendations with code examples."
+      },
+      {
+        "promptType": "ORCHESTRATION",
+        "promptCreationMode": "OVERRIDDEN", 
+        "promptState": "ENABLED",
+        "basePromptTemplate": "Coordinate the security analysis process:\n1. Start with dependency scanning\n2. Perform static code analysis\n3. Check for hardcoded secrets\n4. Validate input sanitization\n5. Review authentication mechanisms\n6. Assess data encryption\n7. Generate comprehensive report"
+      },
+      {
+        "promptType": "POST_PROCESSING",
+        "promptCreationMode": "OVERRIDDEN",
+        "promptState": "ENABLED", 
+        "basePromptTemplate": "Format the security analysis results:\n1. Executive summary with risk score\n2. Detailed vulnerability list with CVSS scores\n3. Compliance status for requested frameworks\n4. Prioritized remediation roadmap\n5. Code examples for fixes\n6. Implementation timeline"
+      }
+    ]
+  },
+  "guardrailConfiguration": {
+    "guardrailId": "devsecops-security-guardrail",
+    "guardrailVersion": "1"
+  },
+  "idleSessionTTLInSeconds": 600,
+  "tags": {
+    "Environment": "production",
+    "Team": "DevSecOps",
+    "Application": "SecurityAnalysis"
+  }
+}

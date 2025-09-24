@@ -1,0 +1,264 @@
+{
+  "flowId": "devsecops-security-flow",
+  "flowName": "DevSecOps Security Analysis Flow",
+  "description": "Automated security analysis and remediation flow for DevSecOps pipeline",
+  "version": "1.0.0",
+  "createdAt": "2024-01-19T16:00:00Z",
+  "updatedAt": "2024-01-19T16:00:00Z",
+  "status": "ACTIVE",
+  "executionRole": "arn:aws:iam::123456789012:role/BedrockDevSecOpsExecutionRole",
+  "workflowDefinition": {
+    "startAt": "security-scan-trigger",
+    "states": [
+      {
+        "name": "security-scan-trigger",
+        "type": "Task",
+        "resource": "arn:aws:bedrock:::model/claude-3-5-sonnet-20241022-v2:0",
+        "parameters": {
+          "prompt": "Analyze the incoming code repository for security vulnerabilities. Identify critical issues, medium issues, and low issues. Provide detailed analysis with remediation steps.",
+          "maxTokens": 4000,
+          "temperature": 0.1
+        },
+        "next": "vulnerability-analysis",
+        "retry": [
+          {
+            "errorEquals": ["Bedrock.ThrottlingException"],
+            "intervalSeconds": 2,
+            "maxAttempts": 3,
+            "backoffRate": 2.0
+          }
+        ]
+      },
+      {
+        "name": "vulnerability-analysis",
+        "type": "Task",
+        "resource": "arn:aws:bedrock:::model/claude-3-5-sonnet-20241022-v2:0",
+        "parameters": {
+          "prompt": "Based on the security scan results, categorize vulnerabilities by severity (Critical, High, Medium, Low). For each category, provide specific remediation steps and code examples.",
+          "maxTokens": 4000,
+          "temperature": 0.1
+        },
+        "next": "compliance-check",
+        "retry": [
+          {
+            "errorEquals": ["Bedrock.ThrottlingException"],
+            "intervalSeconds": 2,
+            "maxAttempts": 3,
+            "backoffRate": 2.0
+          }
+        ]
+      },
+      {
+        "name": "compliance-check",
+        "type": "Task",
+        "resource": "arn:aws:bedrock:::model/claude-3-5-sonnet-20241022-v2:0",
+        "parameters": {
+          "prompt": "Check the code against compliance frameworks: SOC 2, PCI DSS, HIPAA, GDPR. Identify any compliance violations and provide remediation guidance.",
+          "maxTokens": 3000,
+          "temperature": 0.1
+        },
+        "next": "remediation-generation",
+        "retry": [
+          {
+            "errorEquals": ["Bedrock.ThrottlingException"],
+            "intervalSeconds": 2,
+            "maxAttempts": 3,
+            "backoffRate": 2.0
+          }
+        ]
+      },
+      {
+        "name": "remediation-generation",
+        "type": "Task",
+        "resource": "arn:aws:bedrock:::model/claude-3-5-sonnet-20241022-v2:0",
+        "parameters": {
+          "prompt": "Generate specific code fixes and configuration changes to address the identified security vulnerabilities. Provide executable code snippets and deployment instructions.",
+          "maxTokens": 4000,
+          "temperature": 0.1
+        },
+        "next": "security-report",
+        "retry": [
+          {
+            "errorEquals": ["Bedrock.ThrottlingException"],
+            "intervalSeconds": 2,
+            "maxAttempts": 3,
+            "backoffRate": 2.0
+          }
+        ]
+      },
+      {
+        "name": "security-report",
+        "type": "Task",
+        "resource": "arn:aws:bedrock:::model/claude-3-5-sonnet-20241022-v2:0",
+        "parameters": {
+          "prompt": "Generate a comprehensive security report including executive summary, detailed findings, risk assessment, and remediation roadmap with timelines.",
+          "maxTokens": 4000,
+          "temperature": 0.1
+        },
+        "next": "notification",
+        "retry": [
+          {
+            "errorEquals": ["Bedrock.ThrottlingException"],
+            "intervalSeconds": 2,
+            "maxAttempts": 3,
+            "backoffRate": 2.0
+          }
+        ]
+      },
+      {
+        "name": "notification",
+        "type": "Task",
+        "resource": "arn:aws:sns:us-east-1:123456789012:devsecops-security-alerts",
+        "parameters": {
+          "subject": "DevSecOps Security Analysis Complete",
+          "message": "Security analysis completed. Check the generated report for details and remediation steps.",
+          "topicArn": "arn:aws:sns:us-east-1:123456789012:devsecops-security-alerts"
+        },
+        "next": "success",
+        "retry": [
+          {
+            "errorEquals": ["SNS.InvalidParameter"],
+            "intervalSeconds": 1,
+            "maxAttempts": 2
+          }
+        ]
+      },
+      {
+        "name": "success",
+        "type": "Succeed",
+        "outputPath": "$"
+      },
+      {
+        "name": "failure",
+        "type": "Fail",
+        "cause": "Security analysis failed",
+        "error": "SecurityAnalysisError"
+      }
+    ]
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "repositoryUrl": {
+        "type": "string",
+        "description": "Git repository URL to analyze"
+      },
+      "branch": {
+        "type": "string",
+        "description": "Git branch to analyze",
+        "default": "main"
+      },
+      "scanType": {
+        "type": "string",
+        "enum": ["full", "incremental", "dependency-only"],
+        "description": "Type of security scan to perform"
+      },
+      "complianceFrameworks": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["SOC2", "PCI-DSS", "HIPAA", "GDPR", "ISO27001"]
+        },
+        "description": "Compliance frameworks to check against"
+      }
+    },
+    "required": ["repositoryUrl"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "scanId": {
+        "type": "string",
+        "description": "Unique identifier for this scan"
+      },
+      "timestamp": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Scan completion timestamp"
+      },
+      "vulnerabilities": {
+        "type": "object",
+        "properties": {
+          "critical": {
+            "type": "integer",
+            "description": "Number of critical vulnerabilities"
+          },
+          "high": {
+            "type": "integer",
+            "description": "Number of high severity vulnerabilities"
+          },
+          "medium": {
+            "type": "integer",
+            "description": "Number of medium severity vulnerabilities"
+          },
+          "low": {
+            "type": "integer",
+            "description": "Number of low severity vulnerabilities"
+          }
+        }
+      },
+      "compliance": {
+        "type": "object",
+        "properties": {
+          "framework": {
+            "type": "string",
+            "description": "Compliance framework checked"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["COMPLIANT", "NON_COMPLIANT", "PARTIAL"],
+            "description": "Compliance status"
+          },
+          "violations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rule": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "remediation": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "vulnerabilityId": {
+              "type": "string"
+            },
+            "fix": {
+              "type": "string"
+            },
+            "code": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "string",
+              "enum": ["IMMEDIATE", "HIGH", "MEDIUM", "LOW"]
+            }
+          }
+        }
+      },
+      "reportUrl": {
+        "type": "string",
+        "description": "URL to the generated security report"
+      }
+    }
+  },
+  "tags": {
+    "Environment": "production",
+    "Team": "DevSecOps",
+    "Application": "SecurityAnalysis",
+    "CostCenter": "Security"
+  }
+}
