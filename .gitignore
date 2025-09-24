@@ -1,3 +1,10 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
 # Dependencies
 node_modules/
 npm-debug.log*
@@ -107,13 +114,6 @@ k8s/secrets/secret.yaml
 security-reports/
 *.sarif
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
 # OS
 .DS_Store
 .DS_Store?
@@ -143,3 +143,18 @@ monitoring/data/
 # Backup files
 *.bak
 *.backup
+
+# Java specific
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
